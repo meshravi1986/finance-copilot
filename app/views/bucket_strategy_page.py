@@ -1,4 +1,5 @@
 import streamlit as st
+import pandas as pd
 
 from services.bucket_strategy_service import (
     generate_bucket_strategy
@@ -60,6 +61,61 @@ def render_bucket_strategy_page():
     ]
 
     #################################################
+    # USER CONTROLS
+    #################################################
+
+    st.subheader(
+        "Withdrawal Scenario Planning"
+    )
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+
+        withdrawal_rate = st.slider(
+
+            "Withdrawal Rate %",
+
+            min_value=2.0,
+
+            max_value=6.0,
+
+            value=3.5,
+
+            step=0.1
+        )
+
+    with col2:
+
+        expected_return = st.slider(
+
+            "Post Retirement Return %",
+
+            min_value=4.0,
+
+            max_value=14.0,
+
+            value=10.0,
+
+            step=0.5
+        )
+
+    with col3:
+
+        life_expectancy = st.slider(
+
+            "Life Expectancy",
+
+            min_value=75,
+
+            max_value=100,
+
+            value=90,
+
+            step=1
+        )
+
+    #################################################
     # GENERATE STRATEGY
     #################################################
 
@@ -87,7 +143,17 @@ def render_bucket_strategy_page():
 
         inflation_rate=results[
             "inflation_rate"
-        ]
+        ],
+
+        expected_return=(
+            expected_return / 100
+        ),
+
+        life_expectancy=life_expectancy,
+
+        custom_swr=(
+            withdrawal_rate / 100
+        )
     )
 
     #################################################
@@ -98,13 +164,13 @@ def render_bucket_strategy_page():
         "Safe Withdrawal Strategy"
     )
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
 
         st.metric(
 
-            "Safe Withdrawal Rate",
+            "Withdrawal Rate",
 
             f"{strategy['swr']:.1f}%"
         )
@@ -113,7 +179,7 @@ def render_bucket_strategy_page():
 
         st.metric(
 
-            "Safe Monthly Withdrawal",
+            "Monthly Withdrawal",
 
             format_indian_currency(
 
@@ -131,6 +197,42 @@ def render_bucket_strategy_page():
 
             f"{strategy['corpus_ratio']:.2f}x"
         )
+
+    with col4:
+
+        st.metric(
+
+            "Corpus At End",
+
+            format_indian_currency(
+
+                strategy[
+                    "ending_corpus"
+                ]
+            )
+        )
+
+    #################################################
+    # DEPLETION WARNING
+    #################################################
+
+    if strategy[
+        "corpus_depleted"
+    ]:
+
+        st.error(
+
+            f"""
+            Corpus may get exhausted by age
+            {strategy['depletion_age']}.
+            """
+        )
+
+    else:
+
+        st.success("""
+        Corpus survives through full life expectancy.
+        """)
 
     #################################################
     # BUCKETS
@@ -203,6 +305,52 @@ def render_bucket_strategy_page():
     st.dataframe(
 
         bucket_df,
+
+        use_container_width=True,
+
+        hide_index=True
+    )
+
+    #################################################
+    # YEARLY PROJECTION
+    #################################################
+
+    st.subheader(
+        "Corpus Projection"
+    )
+
+    projection_df = pd.DataFrame(
+
+        strategy[
+            "yearly_projection"
+        ]
+    )
+
+    projection_df[
+        "corpus_display"
+    ] = projection_df[
+        "corpus"
+    ].apply(
+        format_indian_currency
+    )
+
+    st.line_chart(
+
+        projection_df.set_index(
+            "age"
+        )[
+            "corpus"
+        ]
+    )
+
+    st.dataframe(
+
+        projection_df[
+            [
+                "age",
+                "corpus_display"
+            ]
+        ],
 
         use_container_width=True,
 

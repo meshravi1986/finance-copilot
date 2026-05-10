@@ -5,7 +5,10 @@ import plotly.express as px
 import pandas as pd
 
 from repositories.asset_repository import (
-    fetch_all_assets
+    fetch_all_assets,
+    fetch_financial_details,
+    fetch_retirement_profile,
+    save_retirement_profile
 )
 
 from services.retirement_service import (
@@ -96,6 +99,27 @@ def render_retirement_page():
         return
 
     #################################################
+    # USER FINANCIAL DETAILS
+    #################################################
+
+    financial_details = (
+        fetch_financial_details(user_id)
+    )
+
+    current_age = max(
+        financial_details["age"],
+        18
+    )
+
+    #################################################
+    # RETIREMENT PROFILE
+    #################################################
+
+    retirement_profile = (
+        fetch_retirement_profile(user_id)
+    )
+
+    #################################################
     # CURRENT PORTFOLIO
     #################################################
 
@@ -126,21 +150,27 @@ def render_retirement_page():
         years_to_retirement = (
             st.number_input(
                 "Years To Retirement",
-                value=12
+                value=retirement_profile[
+                    "years_to_retirement"
+                ]
             )
         )
 
         life_expectancy = (
             st.number_input(
                 "Life Expectancy",
-                value=85
+                value=retirement_profile[
+                    "life_expectancy"
+                ]
             )
         )
 
         current_monthly_expense = (
             st.number_input(
                 "Current Monthly Expense",
-                value=100000,
+                value=retirement_profile[
+                    "current_monthly_expense"
+                ],
                 step=10000
             )
         )
@@ -150,7 +180,10 @@ def render_retirement_page():
         inflation_rate = (
             st.number_input(
                 "Inflation Rate (%)",
-                value=6.0,
+                value=float(retirement_profile[
+                    "inflation_rate"
+
+                ]),
                 step=0.5
             )
         )
@@ -158,7 +191,9 @@ def render_retirement_page():
         annual_sip_growth = (
             st.number_input(
                 "Annual SIP Growth (%)",
-                value=10.0,
+                value=float(retirement_profile[
+                    "annual_sip_growth"
+                ]),
                 step=1.0
             )
         )
@@ -166,17 +201,44 @@ def render_retirement_page():
         yearly_lumpsum = (
             st.number_input(
                 "Yearly Lumpsum Investment",
-                value=0
+                value=retirement_profile[
+                    "yearly_lumpsum"
+                ]
             )
         )
 
         yearly_lumpsum_growth = (
             st.number_input(
                 "Yearly Lumpsum Growth (%)",
-                value=5.0,
+                value=float(retirement_profile[
+                    "yearly_lumpsum_growth"
+                ]),
                 step=1.0
             )
         )
+
+    #################################################
+    # SAVE RETIREMENT PROFILE
+    #################################################
+
+    save_retirement_profile(
+
+        user_id,
+
+        years_to_retirement,
+
+        life_expectancy,
+
+        current_monthly_expense,
+
+        inflation_rate,
+
+        annual_sip_growth,
+
+        yearly_lumpsum,
+
+        yearly_lumpsum_growth
+    )
 
     #################################################
     # INFLATED EXPENSE
@@ -234,8 +296,6 @@ def render_retirement_page():
     # RETIREMENT YEARS
     #################################################
 
-    current_age = 40
-
     retirement_age = (
         current_age +
         years_to_retirement
@@ -281,6 +341,10 @@ def render_retirement_page():
     survivability = (
         simulation_result["success_rate"]
     )
+
+    #################################################
+    # ADVISOR DATA
+    #################################################
 
     advisor_data = {
 
@@ -495,6 +559,7 @@ def render_retirement_page():
     st.markdown(
         advisor_response
     )
+
     #################################################
     # ASSUMPTIONS
     #################################################

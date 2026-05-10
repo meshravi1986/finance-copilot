@@ -302,3 +302,197 @@ def update_assets(df):
 
                 .execute()
             )
+#################################################
+# SAVE RETIREMENT PROFILE
+#################################################
+
+
+def save_retirement_profile(
+
+    user_id,
+
+    years_to_retirement,
+
+    life_expectancy,
+
+    current_monthly_expense,
+
+    inflation_rate,
+
+    annual_sip_growth,
+
+    yearly_lumpsum,
+
+    yearly_lumpsum_growth
+):
+
+    existing = (
+
+        supabase
+
+        .table("retirement_profiles")
+
+        .select("*")
+
+        .eq("user_id", user_id)
+
+        .execute()
+    )
+
+    #################################################
+    # UPDATE
+    #################################################
+
+    if existing.data:
+
+        (
+
+            supabase
+
+            .table("retirement_profiles")
+
+            .update({
+
+                "years_to_retirement":
+                    years_to_retirement,
+
+                "life_expectancy":
+                    life_expectancy,
+
+                "current_monthly_expense":
+                    current_monthly_expense,
+
+                "inflation_rate":
+                    inflation_rate,
+
+                "annual_sip_growth":
+                    annual_sip_growth,
+
+                "yearly_lumpsum":
+                    yearly_lumpsum,
+
+                "yearly_lumpsum_growth":
+                    yearly_lumpsum_growth
+            })
+
+            .eq("user_id", user_id)
+
+            .execute()
+        )
+
+    #################################################
+    # INSERT
+    #################################################
+
+    else:
+
+        (
+
+            supabase
+
+            .table("retirement_profiles")
+
+            .insert({
+
+                "user_id":
+                    user_id,
+
+                "years_to_retirement":
+                    years_to_retirement,
+
+                "life_expectancy":
+                    life_expectancy,
+
+                "current_monthly_expense":
+                    current_monthly_expense,
+
+                "inflation_rate":
+                    inflation_rate,
+
+                "annual_sip_growth":
+                    annual_sip_growth,
+
+                "yearly_lumpsum":
+                    yearly_lumpsum,
+
+                "yearly_lumpsum_growth":
+                    yearly_lumpsum_growth
+            })
+
+            .execute()
+        )
+
+#################################################
+# FETCH RETIREMENT PROFILE
+#################################################
+
+
+def fetch_retirement_profile(user_id):
+
+    response = (
+
+        supabase
+
+        .table("retirement_profiles")
+
+        .select("*")
+
+        .eq("user_id", user_id)
+
+        .execute()
+    )
+
+    data = response.data
+
+    #################################################
+    # EXISTING PROFILE
+    #################################################
+
+    if data:
+
+        row = data[0]
+
+        return {
+
+            "years_to_retirement":
+                row["years_to_retirement"],
+
+            "life_expectancy":
+                row["life_expectancy"],
+
+            "current_monthly_expense":
+                row["current_monthly_expense"],
+
+            "inflation_rate":
+                row["inflation_rate"],
+
+            "annual_sip_growth":
+                row["annual_sip_growth"],
+
+            "yearly_lumpsum":
+                row["yearly_lumpsum"],
+
+            "yearly_lumpsum_growth":
+                row["yearly_lumpsum_growth"]
+        }
+
+    #################################################
+    # DEFAULTS
+    #################################################
+
+    return {
+
+        "years_to_retirement": 12,
+
+        "life_expectancy": 85,
+
+        "current_monthly_expense": 100000,
+
+        "inflation_rate": 6.0,
+
+        "annual_sip_growth": 10.0,
+
+        "yearly_lumpsum": 0,
+
+        "yearly_lumpsum_growth": 5.0
+    }

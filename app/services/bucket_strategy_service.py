@@ -14,7 +14,13 @@ def generate_bucket_strategy(
 
     retirement_age,
 
-    inflation_rate
+    inflation_rate,
+
+    expected_return=0.10,
+
+    life_expectancy=90,
+
+    custom_swr=None
 ):
 
     #################################################
@@ -32,29 +38,35 @@ def generate_bucket_strategy(
     # SAFE WITHDRAWAL RATE
     #################################################
 
-    swr = 0.03
+    if custom_swr is not None:
 
-    if (
+        swr = custom_swr
 
-        survivability >= 90
+    else:
 
-        and
+        swr = 0.03
 
-        corpus_ratio >= 1.75
-    ):
+        if (
 
-        swr = 0.04
+            survivability >= 90
 
-    elif (
+            and
 
-        survivability >= 80
+            corpus_ratio >= 1.75
+        ):
 
-        and
+            swr = 0.04
 
-        corpus_ratio >= 1.4
-    ):
+        elif (
 
-        swr = 0.035
+            survivability >= 80
+
+            and
+
+            corpus_ratio >= 1.4
+        ):
+
+            swr = 0.035
 
     #################################################
     # SAFE YEARLY WITHDRAWAL
@@ -137,6 +149,89 @@ def generate_bucket_strategy(
     ) * 100
 
     #################################################
+    # RETIREMENT SIMULATION
+    #################################################
+
+    years_in_retirement = (
+
+        life_expectancy
+
+        -
+
+        retirement_age
+    )
+
+    corpus = retirement_corpus
+
+    withdrawal = yearly_withdrawal
+
+    corpus_depleted = False
+
+    depletion_age = None
+
+    yearly_projection = []
+
+    for year in range(years_in_retirement):
+
+        age = retirement_age + year
+
+        #################################################
+        # GROW CORPUS
+        #################################################
+
+        corpus = corpus * (
+
+            1 + expected_return
+        )
+
+        #################################################
+        # WITHDRAW
+        #################################################
+
+        corpus = corpus - withdrawal
+
+        #################################################
+        # PREVENT NEGATIVE
+        #################################################
+
+        if corpus <= 0:
+
+            corpus_depleted = True
+
+            depletion_age = age
+
+            corpus = 0
+
+            yearly_projection.append({
+
+                "age": age,
+
+                "corpus": corpus
+            })
+
+            break
+
+        #################################################
+        # SAVE YEAR
+        #################################################
+
+        yearly_projection.append({
+
+            "age": age,
+
+            "corpus": corpus
+        })
+
+        #################################################
+        # INCREASE WITHDRAWAL
+        #################################################
+
+        withdrawal = withdrawal * (
+
+            1 + inflation_rate / 100
+        )
+
+    #################################################
     # REFILL STRATEGY
     #################################################
 
@@ -177,5 +272,13 @@ def generate_bucket_strategy(
 
         "corpus_ratio": corpus_ratio,
 
-        "refill_strategy": refill_strategy
+        "refill_strategy": refill_strategy,
+
+        "ending_corpus": corpus,
+
+        "corpus_depleted": corpus_depleted,
+
+        "depletion_age": depletion_age,
+
+        "yearly_projection": yearly_projection
     }
